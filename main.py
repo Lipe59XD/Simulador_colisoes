@@ -1,18 +1,41 @@
+#Use   "pyhton -m venv <nome_do_seu_venv>""   para criar seu ambiente virtual
+#Ative o seu venv com "<nome_do_seu_venv>/Scripts/activate" no windows e "source <nome_do_seu_venv>/bin/activate" no linux
+#instale as depedencias com "pip install -r dependencias.txt"
+
+
 import pygame as pg
 import random
 
 
 class Bola():
     def __init__(self, pos_x, pos_y): #velocidades e posições aleatórias
-        self.velocity = pg.math.Vector2(random.randint(100, 200), random.randint(100, 200))
+        self.velocity = pg.math.Vector2(random.randint(-1000, 1000), random.randint(-1000, 1000))
         self.pos = pg.math.Vector2(pos_x, pos_y)
-    def update(self, dt): #atualizar a posição do objeto com base na velocidade
+    def update(self, dt): 
+        #Atualiza a posição 
         self.pos += self.velocity * dt
-        # Verificar colisão com as bordas da tela
-        if self.pos.x < radius or self.pos.x > screen_x-radius:
-            self.velocity.x *= -1
-        if self.pos.y < radius or self.pos.y > screen_y-radius:
-            self.velocity.y *= -1
+        
+        #Verifica colisão com a Borda 
+        if self.pos.x < radius:
+            self.pos.x = radius
+            if self.velocity.x < 0:  # Só rebate se ela estiver se movendo para a esquerda
+                self.velocity.x *= -1
+                
+        elif self.pos.x > screen_x - radius:
+            self.pos.x = screen_x - radius 
+            if self.velocity.x > 0:  # Só rebate se ela estiver se movendo para a direita
+                self.velocity.x *= -1
+            
+        #Verifica colisão com a Borda Superior / Inferior
+        if self.pos.y < radius:
+            self.pos.y = radius 
+            if self.velocity.y < 0:  # Só rebate se estiver subindo
+                self.velocity.y *= -1
+                
+        elif self.pos.y > screen_y - radius:
+            self.pos.y = screen_y - radius
+            if self.velocity.y > 0:  # Só rebate se estiver descendo
+                self.velocity.y *= -1
 
 def is_colliding(obj1, obj2, radius=20):
     distance = obj1.pos.distance_to(obj2.pos)
@@ -21,9 +44,20 @@ def is_colliding(obj1, obj2, radius=20):
 def collide(obj1, obj2, c_restitution=1):
     #Vetor direção entre os centros
     p = obj1.pos - obj2.pos
-    if p.length_squared() == 0: 
-        return # Evita divisão por zero se estiverem no mesmo pixel
+    distance = p.length()
+    #Evita normalizacao de vetor de tamanho nulo
+    if distance == 0:
+        return
+    
+    #Normaliza o vetor in place
     p.normalize_ip()
+
+    # Calcula o quanto elas entraram uma na outra (overlap)
+    overlap = (2 * radius) - distance
+    if overlap > 0:
+        # Empurra cada uma para o lado oposto pela metade do valor sobreposto
+        obj1.pos += p * (overlap / 2)
+        obj2.pos -= p * (overlap / 2)
 
     #separa a velocidade original na componente da colisão
     v1_n = obj1.velocity.project(p)
@@ -33,7 +67,7 @@ def collide(obj1, obj2, c_restitution=1):
     v1_t = obj1.velocity - v1_n
     v2_t = obj2.velocity - v2_n
 
-    #centro de massa
+    #v do centro de massa
     v_cm_n = (v1_n + v2_n) / 2
 
     #Aplica a fórmula apenas na componente da colisão
@@ -45,17 +79,17 @@ def collide(obj1, obj2, c_restitution=1):
     obj2.velocity = v2_n_final + v2_t
 
 #dimnesões da tela
-screen_x = 800
-screen_y = 600
+screen_x = 1900
+screen_y = 1060
 
 #raio das bolas
-radius = 50
+radius = 30
 
 #coeficiente de restituicao
-c_restituition = 1
+c_restituition = 0.5
 
 #quantidade de bolas
-n_objects = 10
+n_objects = 70
 objects = []
 for i in range(n_objects):
     posicao_valida = False
